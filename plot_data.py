@@ -14,7 +14,7 @@ def plot_data(filepath):
         plt.xlabel('epoch Number')
     plt.ylabel('Train/val top1 precision at each epoch')
     plt.legend()
-    plt.savefig('Train/val top1 precision at each epoch')
+    # plt.savefig('Train_val_top1.png')
     # plt.show()
 
     if 'train_top5s' in data:
@@ -25,8 +25,8 @@ def plot_data(filepath):
         plt.xlabel('epoch Number')
     plt.ylabel('Train/val top5 precision at each epoch')
     plt.legend()
-    plt.savefig('Train/val top1 precision at each epoch')
-    # plt.show()
+    plt.savefig('Train_val_top5.png')
+    plt.show()
 
     if 'train_losses' in data:
         plt.plot(data['train_losses'], '-o', label = 'train loss')
@@ -36,7 +36,7 @@ def plot_data(filepath):
         plt.xlabel('epoch Number')
     plt.ylabel('Train/val loss at each epoch')
     plt.legend()
-    plt.savefig('Train/val top1 precision at each epoch')
+    plt.savefig('Train_val_loss.png')
     # plt.show()
 
 

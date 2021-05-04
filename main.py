@@ -118,10 +118,10 @@ def main():
 
         np.savez(args.mode + '_' + args.dataset +'.npz', train_losses=train_losses,train_top1s=train_top1s,train_top5s=train_top5s, test_losses=test_losses,test_top1s=test_top1s, test_top5s=test_top5s)
         train_scheduler.step()
-
+       # np.savez(args.mode + '_' + args.dataset +'.npz', train_losses=train_losses)
         time2 = time.time() #timekeeping
         print('Elapsed time for epoch:',time2 - time1,'s')
-        print('ETA of completion:',(time2 - time1)*(epochs - epoch - 1)/60,'minutes')
+        print('ETA of completion:',(time2 - time1)*(args.epochs - epoch - 1)/60,'minutes')
         print()
 
 
@@ -151,8 +151,8 @@ def train(train_loader, model, criterion, optimizer, epoch, print_freq):
         # measure accuracy and record loss
         prec1, prec5 = accuracy(output.data, target, topk=(1, 5))
         losses.update(loss.item(), input.size(0))
-        top1.update(prec1[0], input.size(0))
-        top5.update(prec5[0], input.size(0))
+        top1.update(prec1, input.size(0))
+        top5.update(prec5, input.size(0))
 
         # compute gradient and do SGD step
         optimizer.zero_grad()
@@ -198,8 +198,8 @@ def validate(val_loader, model, criterion, print_freq):
             # measure accuracy and record loss
             prec1, prec5 = accuracy(output.data, target, topk=(1, 5))
             losses.update(loss.item(), input.size(0))
-            top1.update(prec1[0], input.size(0))
-            top5.update(prec5[0], input.size(0))
+            top1.update(prec1, input.size(0))
+            top5.update(prec5, input.size(0))
 
             # measure elapsed time
             batch_time.update(time.time() - end)
