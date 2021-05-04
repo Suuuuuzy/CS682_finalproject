@@ -26,7 +26,7 @@ parser.add_argument('--lr', '--learning_rate', default=0.01, type=float, metavar
                     help='initial learning rate')
 parser.add_argument('--momentum', default=0.9, type=float, metavar='M',
                     help='momentum')
-parser.add_argument('--weight_decay', '--wd', default=1e-4, type=float,
+parser.add_argument('--weight_decay', '--wd', default=5e-4, type=float,
                     metavar='W', help='Weight decay (default: 1e-4)')
 parser.add_argument('--step_size', default=1, type=int,
                     metavar='N', help='step size (default: 1)')
@@ -89,6 +89,7 @@ def main():
 
     for epoch in range(args.start_epoch, args.epochs):
         # adjust_learning_rate(optimizer, epoch, args.lr)
+        time1 = time.time() #timekeeping
 
         # train for one epoch
         loss, top1, top5 = train(train_loader, model, criterion, optimizer, epoch, args.print_freq)
@@ -117,6 +118,12 @@ def main():
         np.savez(args.mode + '_' + args.dataset +'.npz', train_losses=train_losses,train_top1s=train_top1s,train_top5s=train_top5s, test_losses=test_losses,test_top1s=test_top1s, test_top5s=test_top5s)
         train_scheduler.step()
 
+        time2 = time.time() #timekeeping
+        print('Elapsed time for epoch:',time2 - time1,'s')
+        print('ETA of completion:',(time2 - time1)*(epochs - epoch - 1)/60,'minutes')
+        print()
+
+
 
 def train(train_loader, model, criterion, optimizer, epoch, print_freq):
     batch_time = AverageMeter()
@@ -144,7 +151,7 @@ def train(train_loader, model, criterion, optimizer, epoch, print_freq):
         prec1, prec5 = accuracy(output.data, target, topk=(1, 5))
         losses.update(loss.item(), input.size(0))
         top1.update(prec1[0], input.size(0))
-        top5.update(prec1[0], input.size(0))
+        top5.update(prec5[0], input.size(0))
 
         # compute gradient and do SGD step
         optimizer.zero_grad()
