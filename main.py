@@ -2,6 +2,7 @@
 import argparse
 import os
 import time
+import numpy as np
 
 from model import initialize_model
 
@@ -39,7 +40,7 @@ parser.add_argument('-e', '--evaluate', dest='evaluate', action='store_true',
 parser.add_argument('--print_freq', '-f', default=10, type=int, metavar='N',
                     help='print frequency (default: 10)')
 
-
+best_prec1 = 0.0
 
 def main():
     global args, best_prec1
