@@ -145,8 +145,8 @@ def TinyImageNet_data_loader(batch_size):
   # data augmentation to val data
   test_transform = transforms.Compose([transforms.ToTensor(), norm])
 
-  train_dataset = TinyImageNet('data', split='train', download=False, transform=train_transform, percent = 0.1)
-  val_dataset = TinyImageNet('data', split='val', download=False, transform=test_transform)
+  train_dataset = TinyImageNet('data', split='train', download=True, transform=train_transform, percent = 0.1)
+  val_dataset = TinyImageNet('data', split='val', download=True, transform=test_transform)
 
   train_dataloader = DataLoader(train_dataset, batch_size=batch_size,  shuffle=True)
   val_dataloader = DataLoader(val_dataset, batch_size=batch_size,  shuffle=False)

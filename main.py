@@ -11,10 +11,12 @@ import torch.optim as optim
 import torch.utils.data
 
 from utils import TinyImageNet_data_loader
-from helper import AverageMeter, save_checkpoint, accuracy, adjust_learning_rate
+from helper import AverageMeter, save_checkpoint, accuracy
 
 parser = argparse.ArgumentParser(description='PyTorch Tiny/ImageNet Training')
 parser.add_argument('--dataset', default='TinyImageNet', help='TinyImageNet or ImageNet')
+parser.add_argument('--start-epoch', default=0, type=int, metavar='N',
+                    help='manual epoch number (useful to restarts)')
 parser.add_argument('--mode', default='baseline_train', help='baseline_train/pretrain/finetune')
 parser.add_argument('--epochs', default=10, type=int, metavar='N',
                     help='numer of total epochs to run')
@@ -46,8 +48,6 @@ def main():
 
     # model
     if args.mode=='baseline_train':
-        save_model_name = 'resnet-tiny-10-baseline.pth',
-        save_data_name = 'resnet-tiny-10-baseline_data.npz'
         model = initialize_model(use_resnet=True, pretrained=False, nclasses=200)
     if torch.cuda.is_available:
         model = model.cuda()
@@ -57,6 +57,7 @@ def main():
 
     # optionlly resume from a checkpoint
     if args.resume:
+        print('resume')
         if os.path.isfile(args.resume):
             print("=> loading checkpoint '{}'".format(args.resume))
             checkpoint = torch.load(args.resume)
@@ -70,8 +71,8 @@ def main():
 
     # data
     if args.dataset=='TinyImageNet':
-        from utils import TinyImageNet_data_loaders
-        train_loader, val_loader = TinyImageNet_data_loaders(args.batch_size)
+        from utils import TinyImageNet_data_loader
+        train_loader, val_loader = TinyImageNet_data_loader(args.batch_size)
     
     # if evaluate the model
     if args.evaluate:
@@ -87,7 +88,6 @@ def main():
     test_top5s = []
 
     for epoch in range(args.start_epoch, args.epochs):
-        train_scheduler.step()
         # adjust_learning_rate(optimizer, epoch, args.lr)
 
         # train for one epoch
@@ -115,7 +115,7 @@ def main():
         }, is_best, args.mode + '_' + args.dataset +'.pth')
 
         np.savez(args.mode + '_' + args.dataset +'.npz', train_losses=train_losses,train_top1s=train_top1s,train_top5s=train_top5s, test_losses=test_losses,test_top1s=test_top1s, test_top5s=test_top5s)
-
+        train_scheduler.step()
 
 
 def train(train_loader, model, criterion, optimizer, epoch, print_freq):
@@ -133,8 +133,8 @@ def train(train_loader, model, criterion, optimizer, epoch, print_freq):
         # measure data loading time
         data_time.update(time.time() - end)
         if torch.cuda.is_available():
-            target = target.cuda(async=True)
-            input = input.cuda(async=True)
+            target = target.cuda()
+            input = input.cuda()
 
         # compute output
         output = model(input)
@@ -180,8 +180,8 @@ def validate(val_loader, model, criterion, print_freq):
 
     end = time.time()
     for i, (input, target) in enumerate(val_loader):
-        target = target.cuda(async=True)
-        input = input.cuda(async=True)
+        target = target.cuda()
+        input = input.cuda()
         with torch.no_grad():
             # compute output
             output = model(input)
