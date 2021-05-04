@@ -137,7 +137,7 @@ def make_dataset(root, base_folder, dirname, class_to_idx, percent=1):
     return images
 
 
-def TinyImageNet_data_loaders(batch_size):
+def TinyImageNet_data_loader(batch_size):
 
   norm = transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5])
   # data augmentation to training data
