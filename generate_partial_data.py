@@ -12,6 +12,7 @@ def find_classes(class_file):
     return classes, class_to_idx
 
 def generate_partial_data(dataset_path,new_dataset_path, percent):
+    shutil.rmtree(new_dataset_path)
     os.makedirs(new_dataset_path, exist_ok=True)
     if 'tiny-imagenet-200' in dataset_path:
         _, class_to_idx = find_classes(os.path.join(dataset_path, 'wnids.txt'))
