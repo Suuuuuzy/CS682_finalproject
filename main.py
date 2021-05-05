@@ -12,7 +12,7 @@ import torch.optim as optim
 import torch.utils.data
 
 from utils import TinyImageNet_data_loader
-from helper import AverageMeter, save_checkpoint, accuracy
+from helper import AverageMeter, save_checkpoint, accuracy, adjust_learning_rate
 
 parser = argparse.ArgumentParser(description='PyTorch Tiny/ImageNet Training')
 parser.add_argument('--dataset', default='TinyImageNet', help='TinyImageNet or ImageNet')
@@ -28,7 +28,7 @@ parser.add_argument('--lr', '--learning_rate', default=0.01, type=float, metavar
 parser.add_argument('--momentum', default=0.9, type=float, metavar='M',
                     help='momentum')
 parser.add_argument('--weight_decay', '--wd', default=5e-4, type=float,
-                    metavar='W', help='Weight decay (default: 1e-4)')
+                    metavar='W', help='Weight decay (default: 5e-4)')
 parser.add_argument('--step_size', default=1, type=int,
                     metavar='N', help='step size (default: 1)')
 parser.add_argument('--gamma', default=0.975, type=float,
@@ -37,8 +37,8 @@ parser.add_argument('--resume', default='', type=str, metavar='PATH',
                     help='path to latest checkpoitn, (default: None)')
 parser.add_argument('-e', '--evaluate', dest='evaluate', action='store_true',
                     help='evaluate model on validation set')
-parser.add_argument('--print_freq', '-f', default=10, type=int, metavar='N',
-                    help='print frequency (default: 10)')
+parser.add_argument('--print_freq', '-f', default=40, type=int, metavar='N',
+                    help='print frequency (default: 40)')
 
 best_prec1 = 0.0
 
@@ -89,8 +89,8 @@ def main():
     test_top5s = []
 
     for epoch in range(args.start_epoch, args.epochs):
-        # adjust_learning_rate(optimizer, epoch, args.lr)
-        time1 = time.time() #timekeeping
+        adjust_learning_rate(optimizer, epoch, args.lr)
+        # time1 = time.time() #timekeeping
 
         # train for one epoch
         loss, top1, top5 = train(train_loader, model, criterion, optimizer, epoch, args.print_freq)
@@ -117,7 +117,7 @@ def main():
         }, is_best, args.mode + '_' + args.dataset +'.pth')
 
         np.savez(args.mode + '_' + args.dataset +'.npz', train_losses=train_losses,train_top1s=train_top1s,train_top5s=train_top5s, test_losses=test_losses,test_top1s=test_top1s, test_top5s=test_top5s)
-        train_scheduler.step()
+        # train_scheduler.step()
        # np.savez(args.mode + '_' + args.dataset +'.npz', train_losses=train_losses)
         time2 = time.time() #timekeeping
         print('Elapsed time for epoch:',time2 - time1,'s')
