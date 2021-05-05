@@ -1,7 +1,6 @@
 __pycache__/
 *.png
 data/
-baseline_train_TinyImageNet.npz
-baseline_train_TinyImageNet.pth
-baseline_train_TinyImageNet_best.pth
+*.npz
+*.pth
 

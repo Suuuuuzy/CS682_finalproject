@@ -46,6 +46,8 @@ class TinyImageNet(VisionDataset):
         super(TinyImageNet, self).__init__(root, transform=transform, target_transform=target_transform)
 
         os.makedirs(root, exist_ok=True)
+        self.root = root
+        self.base_folder = base_folder
         self.dataset_path = os.path.join(root, self.base_folder)
         self.loader = default_loader
         self.split = verify_str_arg(split, "split", ("train", "val",))
