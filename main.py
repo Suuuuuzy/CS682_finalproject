@@ -56,6 +56,14 @@ def main():
     train_scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=args.step_size, gamma=args.gamma) 
     criterion = nn.CrossEntropyLoss()
 
+    train_losses = []
+    train_top1s = []
+    train_top5s = []
+
+    test_losses = []
+    test_top1s = []
+    test_top5s = []
+
     # optionlly resume from a checkpoint
     if args.resume:
         print('resume')
@@ -66,6 +74,14 @@ def main():
             best_prec1 = checkpoint['best_prec1']
             model.load_state_dict(checkpoint['state_dict'])
             optimizer.load_state_dict(checkpoint['optimizer'])
+            datafile = args.resume.split('.pth')[0] + '.npz'
+            load_data = np.load(datafile)
+            train_losses = list(load_data['train_losses'])
+            train_top1s = list(load_data['train_top1s'])
+            train_top5s = list(load_data['train_top5s'])
+            test_losses = list(load_data['test_losses'])
+            test_top1s = list(load_data['test_top1s'])
+            test_top5s = list(load_data['test_top5s'])
             print("=> loaded checkpoint '{}' (epoch {})".format(args.resume, checkpoint['epoch']))
         else:
             print("=> no checkpoint found at '{}'".format(args.resume))
@@ -77,16 +93,10 @@ def main():
     
     # if evaluate the model
     if args.evaluate:
+        print('evaluate this model on validation dataset')
         validate(val_loader, model, criterion, args.print_freq)
         return
     
-    train_losses = []
-    train_top1s = []
-    train_top5s = []
-
-    test_losses = []
-    test_top1s = []
-    test_top5s = []
 
     for epoch in range(args.start_epoch, args.epochs):
         adjust_learning_rate(optimizer, epoch, args.lr)
@@ -205,16 +215,13 @@ def validate(val_loader, model, criterion, print_freq):
             batch_time.update(time.time() - end)
             end = time.time()
 
-            if i % print_freq == 0:
-                print('Test: [{0}/{1}]\t'
-                      'Time {batch_time.val:.3f} ({batch_time.avg:.3f})\t'
-                      'Loss {loss.val:.4f} ({loss.avg:.4f})\t'
-                      'Prec@1 {top1.val:.3f} ({top1.avg:.3f})\t'
-                      'Prec@5 {top5.val:.3f} ({top5.avg:.3f})'.format(
-                    i, len(val_loader), batch_time=batch_time, loss=losses,
-                    top1=top1, top5=top5))
-
-    print(' * Prec@1 {top1.avg:.3f} Prec@5 {top5.avg:.3f}'.format(top1=top1, top5=top5))
+    print('Test: [{0}/{1}]\t'
+          'Time {batch_time.val:.3f} ({batch_time.avg:.3f})\t'
+          'Loss {loss.val:.4f} ({loss.avg:.4f})\t'
+          'Prec@1 {top1.val:.3f} ({top1.avg:.3f})\t'
+          'Prec@5 {top5.val:.3f} ({top5.avg:.3f})'.format(
+        i, len(val_loader), batch_time=batch_time, loss=losses,
+        top1=top1, top5=top5))
 
     return losses.avg, top1.avg, top5.avg
 
