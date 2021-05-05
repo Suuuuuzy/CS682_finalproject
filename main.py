@@ -15,7 +15,7 @@ from utils import TinyImageNet_data_loader
 from helper import AverageMeter, save_checkpoint, accuracy, adjust_learning_rate
 
 parser = argparse.ArgumentParser(description='PyTorch Tiny/ImageNet Training')
-parser.add_argument('--dataset', default='TinyImageNet', help='TinyImageNet or ImageNet')
+parser.add_argument('--dataset', default='tiny-imagenet-200-01', help='TinyImageNet or ImageNet')
 parser.add_argument('--start-epoch', default=0, type=int, metavar='N',
                     help='manual epoch number (useful to restarts)')
 parser.add_argument('--mode', default='baseline_train', help='baseline_train/pretrain/finetune')
@@ -87,9 +87,9 @@ def main():
             print("=> no checkpoint found at '{}'".format(args.resume))
 
     # data
-    if args.dataset=='TinyImageNet':
-        from utils import TinyImageNet_data_loader
-        train_loader, val_loader = TinyImageNet_data_loader(args.batch_size)
+    # if args.dataset=='TinyImageNet':
+    from utils import TinyImageNet_data_loader
+    train_loader, val_loader = TinyImageNet_data_loader(args.dataset, args.batch_size)
     
     # if evaluate the model
     if args.evaluate:

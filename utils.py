@@ -37,19 +37,18 @@ class TinyImageNet(VisionDataset):
                puts it in root directory. If dataset is already downloaded, it is not
                downloaded again.
     """
-    base_folder = 'tiny-imagenet-200/'
+    # base_folder = 'tiny-imagenet-200/'
     url = 'http://cs231n.stanford.edu/tiny-imagenet-200.zip'
     filename = 'tiny-imagenet-200.zip'
     md5 = '90528d7ca1a48142e341f4ef8d21d0de'
 
-    def __init__(self, root, split='train', transform=None, target_transform=None, download=False, percent=0.1):
+    def __init__(self, root, base_folder, split='train', transform=None, target_transform=None, download=False):
         super(TinyImageNet, self).__init__(root, transform=transform, target_transform=target_transform)
 
         os.makedirs(root, exist_ok=True)
         self.dataset_path = os.path.join(root, self.base_folder)
         self.loader = default_loader
         self.split = verify_str_arg(split, "split", ("train", "val",))
-        self.percent = percent
         if self._check_integrity():
             print('Files already downloaded and verified.')
         elif download:
@@ -63,7 +62,7 @@ class TinyImageNet(VisionDataset):
 
         _, class_to_idx = find_classes(os.path.join(self.dataset_path, 'wnids.txt'))
 
-        self.data = make_dataset(self.root, self.base_folder, self.split, class_to_idx, self.percent)
+        self.data = make_dataset(self.root, self.base_folder, self.split, class_to_idx)
 
     def _download(self):
         if not os.path.isfile(os.path.join(self.root, self.filename)):
@@ -102,7 +101,7 @@ def find_classes(class_file):
     return classes, class_to_idx
 
 
-def make_dataset(root, base_folder, dirname, class_to_idx, percent=1):
+def make_dataset(root, base_folder, dirname, class_to_idx):
     images = []
     dir_path = os.path.join(root, base_folder, dirname)
 
@@ -112,9 +111,7 @@ def make_dataset(root, base_folder, dirname, class_to_idx, percent=1):
             if os.path.isdir(cls_fpath):
                 cls_imgs_path = os.path.join(cls_fpath, 'images')
                 image_names = os.listdir(cls_imgs_path)
-                image_number = len(image_names)
-                smaple_image_names = random.sample(image_names, int(image_number*percent))
-                for imgname in sorted(smaple_image_names):
+                for imgname in sorted(image_names):
                     path = os.path.join(cls_imgs_path, imgname)
                     item = (path, class_to_idx[fname])
                     images.append(item)
@@ -127,9 +124,7 @@ def make_dataset(root, base_folder, dirname, class_to_idx, percent=1):
 
         cls_map = {line_data[0]: line_data[1] for line_data in data_info}
         image_names = os.listdir(imgs_path)
-        image_number = len(image_names)
-        smaple_image_names = random.sample(image_names, int(image_number*percent))
-        for imgname in smaple_image_names:
+        for imgname in image_names:
             path = os.path.join(imgs_path, imgname)
             item = (path, class_to_idx[cls_map[imgname]])
             images.append(item)
@@ -137,7 +132,7 @@ def make_dataset(root, base_folder, dirname, class_to_idx, percent=1):
     return images
 
 
-def TinyImageNet_data_loader(batch_size):
+def TinyImageNet_data_loader(base_folder, batch_size):
 
   norm = transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5])
   # data augmentation to training data
@@ -145,8 +140,8 @@ def TinyImageNet_data_loader(batch_size):
   # data augmentation to val data
   test_transform = transforms.Compose([transforms.ToTensor(), norm])
 
-  train_dataset = TinyImageNet('data', split='train', download=True, transform=train_transform, percent = 0.1)
-  val_dataset = TinyImageNet('data', split='val', download=True, transform=test_transform)
+  train_dataset = TinyImageNet('data', base_folder, split='train', download=True, transform=train_transform)
+  val_dataset = TinyImageNet('data', base_folder, split='val', download=True, transform=test_transform)
 
   train_dataloader = DataLoader(train_dataset, batch_size=batch_size,  shuffle=True)
   val_dataloader = DataLoader(val_dataset, batch_size=batch_size,  shuffle=False)
