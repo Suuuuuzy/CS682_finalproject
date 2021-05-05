@@ -37,6 +37,8 @@ parser.add_argument('--resume', default='', type=str, metavar='PATH',
                     help='path to latest checkpoitn, (default: None)')
 parser.add_argument('-e', '--evaluate', dest='evaluate', action='store_true',
                     help='evaluate model on validation set')
+parser.add_argument('-c', '--color_distortion', dest='color_distortion', action='store_true',
+                    help='add color_distortion to train set')
 parser.add_argument('--print_freq', '-f', default=40, type=int, metavar='N',
                     help='print frequency (default: 40)')
 
@@ -89,7 +91,7 @@ def main():
     # data
     # if args.dataset=='TinyImageNet':
     from utils import TinyImageNet_data_loader
-    train_loader, val_loader = TinyImageNet_data_loader(args.dataset, args.batch_size)
+    train_loader, val_loader = TinyImageNet_data_loader(args.dataset, args.batch_size,color_distortion=args.color_distortion)
     
     # if evaluate the model
     if args.evaluate:

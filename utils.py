@@ -42,12 +42,13 @@ class TinyImageNet(VisionDataset):
     filename = 'tiny-imagenet-200.zip'
     md5 = '90528d7ca1a48142e341f4ef8d21d0de'
 
-    def __init__(self, root, base_folder, split='train', transform=None, target_transform=None, download=False):
+    def __init__(self, root, base_folder, split='train', transform=None, target_transform=None, download=False, color_distortion=False):
         super(TinyImageNet, self).__init__(root, transform=transform, target_transform=target_transform)
 
         os.makedirs(root, exist_ok=True)
         self.root = root
         self.base_folder = base_folder
+        self.color_distortion = color_distortion
         self.dataset_path = os.path.join(root, self.base_folder)
         self.loader = default_loader
         self.split = verify_str_arg(split, "split", ("train", "val",))
@@ -62,9 +63,11 @@ class TinyImageNet(VisionDataset):
         image = self.loader(img_path)
 
         if self.transform is not None:
-            image = self.transform(image)
+          if self.color_distortion:
+            image = get_color_distortion(1)(image)
+          image = self.transform(image)
         if self.target_transform is not None:
-            target = self.target_transform(target)
+          target = self.target_transform(target)
 
         return image, target
 
@@ -113,7 +116,16 @@ def make_dataset(root, base_folder, dirname, class_to_idx):
     return images
 
 
-def TinyImageNet_data_loader(base_folder, batch_size):
+def get_color_distortion(s=1.0):
+    # s is the strength of color distortion.
+    color_jitter = T.ColorJitter(0.8 * s, 0.8 * s, 0.8 * s, 0.2 * s)
+    rnd_color_jitter = T.RandomApply([color_jitter], p=0.8)
+    rnd_gray = T.RandomGrayscale(p=0.2)
+    color_distort = T.Compose([rnd_color_jitter, rnd_gray])
+    return color_distort
+
+
+def TinyImageNet_data_loader(base_folder, batch_size, color_distortion):
 
   norm = transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5])
   # data augmentation to training data
@@ -121,7 +133,7 @@ def TinyImageNet_data_loader(base_folder, batch_size):
   # data augmentation to val data
   test_transform = transforms.Compose([transforms.ToTensor(), norm])
 
-  train_dataset = TinyImageNet('data', base_folder, split='train', download=True, transform=train_transform)
+  train_dataset = TinyImageNet('data', base_folder, split='train', download=True, transform=train_transform,color_distortion=color_distortion)
   val_dataset = TinyImageNet('data', base_folder, split='val', download=True, transform=test_transform)
 
   train_dataloader = DataLoader(train_dataset, batch_size=batch_size,  shuffle=True)
