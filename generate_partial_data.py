@@ -15,6 +15,7 @@ def generate_partial_data(dataset_path,new_dataset_path, percent):
     shutil.rmtree(new_dataset_path)
     os.makedirs(new_dataset_path, exist_ok=True)
     if 'tiny-imagenet-200' in dataset_path:
+        shutil.copyfile(os.path.join(dataset_path, 'wnids.txt'), os.path.join(new_dataset_path, 'wnids.txt'))
         _, class_to_idx = find_classes(os.path.join(dataset_path, 'wnids.txt'))
 
     for dirname in ['train', 'val']:
@@ -44,10 +45,12 @@ def make_partial_dataset(dataset_path,new_dataset_path,  dirname, class_to_idx, 
                 
     else:
         imgs_path = os.path.join(dir_path, 'images')
-        imgs_annotations = os.path.join(dir_path, 'val_annotations.txt')
-
         new_imgs_path = os.path.join(new_dir_path, 'images')
         os.makedirs(new_imgs_path, exist_ok=True)
+
+        imgs_annotations = os.path.join(dir_path, 'val_annotations.txt')
+        shutil.copyfile(imgs_annotations, os.path.join(new_dir_path, 'wnids.txt'))
+
         with open(imgs_annotations) as r:
             data_info = map(lambda s: s.split('\t'), r.readlines())
 
