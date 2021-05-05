@@ -90,7 +90,7 @@ def main():
 
     for epoch in range(args.start_epoch, args.epochs):
         adjust_learning_rate(optimizer, epoch, args.lr)
-        # time1 = time.time() #timekeeping
+        time1 = time.time() #timekeeping
 
         # train for one epoch
         loss, top1, top5 = train(train_loader, model, criterion, optimizer, epoch, args.print_freq)
