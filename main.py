@@ -145,7 +145,7 @@ def main():
                 datafile = args.resume.split('.pth')[0] + '.npz'
                 load_data = np.load(datafile)
                 train_losses = list(load_data['train_losses'])
-                test_losses = list(load_data['test_losses'])
+                # test_losses = list(load_data['test_losses'])
             print("=> loaded checkpoint '{}' (epoch {})".format(args.resume, checkpoint['epoch']))
         else:
             print("=> no checkpoint found at '{}'".format(args.resume))
@@ -203,6 +203,7 @@ def main():
         #data
         from utils import TinyImageNet_data_loader
         args.dataset = 'tiny-imagenet-200'
+        args.batch_size = 16
         train_loader, val_loader = TinyImageNet_data_loader(args.dataset, args.batch_size, col=True)
         
         # if evaluate the model, show some results
@@ -224,10 +225,10 @@ def main():
             loss, _, _ = train(train_loader, model, criterion, optimizer, epoch, args.print_freq, colorization=True,scheduler=scheduler)
             train_losses.append(loss)
 
-            model.eval()
-            # evaluate on validation set
-            loss, _, _ = validate(val_loader, model, criterion, args.print_freq, colorization=True)
-            test_losses.append(loss)
+            # model.eval()
+            # # evaluate on validation set
+            # loss, _, _ = validate(val_loader, model, criterion, args.print_freq, colorization=True)
+            # test_losses.append(loss)
 
             save_checkpoint({
                 'epoch': epoch + 1,
@@ -238,7 +239,7 @@ def main():
                 "cur_itrs": cur_itrs
             }, True, args.mode + '_' + args.dataset +'.pth')
 
-            np.savez(args.mode + '_' + args.dataset +'.npz', train_losses=train_losses, test_losses=test_losses)
+            np.savez(args.mode + '_' + args.dataset +'.npz', train_losses=train_losses)
             # scheduler.step()
             time2 = time.time() #timekeeping
             print('Elapsed time for epoch:',time2 - time1,'s')
@@ -271,6 +272,9 @@ def train(train_loader, model, criterion, optimizer, epoch, print_freq, coloriza
       #      input = input.cuda()
         target = target.to(device, dtype=torch.float32)
         input = input.to(device, dtype=torch.float32)
+
+        input = transforms.Resize(500)(input)
+        target = transforms.Resize(500)(target)
         if colorization:
             input = input.repeat(1,3,1,1)
 
@@ -333,6 +337,9 @@ def validate(val_loader, model, criterion, print_freq, colorization=False):
         input = input.to(device, dtype=torch.float32)
         target = target.to(device, dtype=torch.float32)
 
+        input = transforms.Resize(500)(input)
+        target = transforms.Resize(500)(target)
+
         if colorization:
             input = input.repeat(1,3,1,1)
 
@@ -365,7 +372,7 @@ def validate(val_loader, model, criterion, print_freq, colorization=False):
             i, len(val_loader), batch_time=batch_time, loss=losses))
     return losses.avg, top1.avg, top5.avg
 
-def visulization(val_loader, model, start_epoch):
+def visulization(train_loader, model, start_epoch):
     # switch to evaluate mode
     model.eval()
     os.makedirs('visulization', exist_ok=True)
