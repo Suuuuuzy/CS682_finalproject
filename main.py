@@ -54,8 +54,12 @@ parser.add_argument('--print_freq', '-f', default=40, type=int, metavar='N',
 parser.add_argument("--output_stride", type=int, default=16, choices=[8, 16])
 parser.add_argument("--num_classes", type=int, default=3,
                         help="num classes (default: 3)")
+parser.add_argument("--total_itrs", type=int, default=30e3,
+                        help="epoch number (default: 30k)")
+
 
 best_prec1 = 0.0
+cur_itrs = 0
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 print("Device: %s" % device)
@@ -136,6 +140,8 @@ def main():
                 model.load_state_dict(checkpoint['state_dict'])
                 optimizer.load_state_dict(checkpoint['optimizer'])
                 scheduler.load_state_dict(checkpoint['scheduler'])
+                global cur_itrs
+                cur_itrs = checkpoint['cur_itrs']
                 datafile = args.resume.split('.pth')[0] + '.npz'
                 load_data = np.load(datafile)
                 train_losses = list(load_data['train_losses'])
@@ -205,12 +211,16 @@ def main():
             return
 
         for epoch in range(args.start_epoch, args.epochs):
+        while True:
+            global cur_itrs
+            if cur_itrs >=  args.total_itrs:
+                return
             # adjust_learning_rate(optimizer, epoch, args.lr)
             time1 = time.time() #timekeeping
 
             model.train()
             # train for one epoch
-            loss, _, _ = train(train_loader, model, criterion, optimizer, epoch, args.print_freq, colorization=True)
+            loss, _, _ = train(train_loader, model, criterion, optimizer, epoch, args.print_freq, colorization=True,scheduler=scheduler)
             train_losses.append(loss)
 
             model.eval()
@@ -223,11 +233,12 @@ def main():
                 'mode': args.mode,
                 'state_dict': model.state_dict(),
                 'optimizer': optimizer.state_dict(),
-                'scheduler':scheduler.state_dict()
+                'scheduler':scheduler.state_dict(),
+                "cur_itrs": cur_itrs
             }, True, args.mode + '_' + args.dataset +'.pth')
 
             np.savez(args.mode + '_' + args.dataset +'.npz', train_losses=train_losses, test_losses=test_losses)
-            scheduler.step()
+            # scheduler.step()
             time2 = time.time() #timekeeping
             print('Elapsed time for epoch:',time2 - time1,'s')
             print('ETA of completion:',(time2 - time1)*(args.epochs - epoch - 1)/60,'minutes')
@@ -236,7 +247,7 @@ def main():
 
 
 
-def train(train_loader, model, criterion, optimizer, epoch, print_freq, colorization=False):
+def train(train_loader, model, criterion, optimizer, epoch, print_freq, colorization=False,scheduler=None):
     batch_time = AverageMeter()
     data_time = AverageMeter()
     losses = AverageMeter()
@@ -248,6 +259,8 @@ def train(train_loader, model, criterion, optimizer, epoch, print_freq, coloriza
 
     end = time.time()
     for i, (input, target) in enumerate(train_loader):
+        global cur_itrs
+        cur_itrs+=1
         # measure data loading time
         data_time.update(time.time() - end)
        # if torch.cuda.is_available():
@@ -272,6 +285,8 @@ def train(train_loader, model, criterion, optimizer, epoch, print_freq, coloriza
         optimizer.zero_grad()
         loss.backward()
         optimizer.step()
+        if scheduler:
+            scheduler.step()
 
         # measure elapsed time
         batch_time.update(time.time() - end)
