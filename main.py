@@ -65,6 +65,7 @@ device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 print("Device: %s" % device)
 def main():
     global args, best_prec1
+    global cur_itrs
     args = parser.parse_args()
     print(args.mode)
 
@@ -140,7 +141,6 @@ def main():
                 model.load_state_dict(checkpoint['state_dict'])
                 optimizer.load_state_dict(checkpoint['optimizer'])
                 scheduler.load_state_dict(checkpoint['scheduler'])
-                global cur_itrs
                 cur_itrs = checkpoint['cur_itrs']
                 datafile = args.resume.split('.pth')[0] + '.npz'
                 load_data = np.load(datafile)
@@ -213,7 +213,6 @@ def main():
         # for epoch in range(args.start_epoch, args.epochs):
         epoch = 0
         while True:
-            global cur_itrs
             if cur_itrs >=  args.total_itrs:
                 return
             # adjust_learning_rate(optimizer, epoch, args.lr)
@@ -255,13 +254,14 @@ def train(train_loader, model, criterion, optimizer, epoch, print_freq, coloriza
     losses = AverageMeter()
     top1 = AverageMeter()
     top5 = AverageMeter()
+    global cur_itrs
 
     # switch to train mode
     model.train()
 
     end = time.time()
     for i, (input, target) in enumerate(train_loader):
-        global cur_itrs
+        
         cur_itrs+=1
         # measure data loading time
         data_time.update(time.time() - end)
