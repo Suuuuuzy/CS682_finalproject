@@ -35,8 +35,8 @@ parser.add_argument('--lr', '--learning_rate', default=0.01, type=float, metavar
                     help='initial learning rate')
 parser.add_argument('--momentum', default=0.9, type=float, metavar='M',
                     help='momentum')
-parser.add_argument('--weight_decay', '--wd', default=5e-4, type=float,
-                    metavar='W', help='Weight decay (default: 5e-4)')
+parser.add_argument('--weight_decay', '--wd', default=1e-4, type=float,
+                    metavar='W', help='Weight decay (default: 1e-4)')
 parser.add_argument('--step_size', default=1, type=int,
                     metavar='N', help='step size (default: 1)')
 parser.add_argument('--gamma', default=0.975, type=float,
@@ -101,7 +101,7 @@ def main():
         {'params': model.backbone.parameters(), 'lr': 0.1*args.lr},
         {'params': model.classifier.parameters(), 'lr': args.lr},
     ], lr=args.lr, momentum=0.9, weight_decay=args.weight_decay)
-        scheduler = PolyLR(optimizer, args.epochs, power=0.9)
+        scheduler = PolyLR(optimizer, args.total_itrs, power=0.9)
 
     # STEP3: loss/prec record
     if args.mode in ['baseline_train', 'finetune']:
