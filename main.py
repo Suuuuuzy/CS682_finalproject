@@ -241,7 +241,7 @@ def main():
             # scheduler.step()
             time2 = time.time() #timekeeping
             print('Elapsed time for epoch:',time2 - time1,'s')
-            print('ETA of completion:',(time2 - time1)*(args.epochs - epoch - 1)/60,'minutes')
+            print('ETA of completion:',(time2 - time1)*(args.total_itrs - cur_itrs - 1)/60,'minutes')
             print()
             epoch += 1
 
