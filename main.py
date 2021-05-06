@@ -347,7 +347,7 @@ def validate(val_loader, model, criterion, print_freq, colorization=False):
             i, len(val_loader), batch_time=batch_time, loss=losses))
     return losses.avg, top1.avg, top5.avg
 
-def visulization(val_loader, model,start_epoch):
+def visulization(val_loader, model, start_epoch):
     # switch to evaluate mode
     model.eval()
     os.makedirs('visulization', exist_ok=True)
