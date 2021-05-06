@@ -210,7 +210,8 @@ def main():
             visulization(val_loader, model, args.start_epoch)
             return
 
-        for epoch in range(args.start_epoch, args.epochs):
+        # for epoch in range(args.start_epoch, args.epochs):
+        epoch = 0
         while True:
             global cur_itrs
             if cur_itrs >=  args.total_itrs:
@@ -243,6 +244,7 @@ def main():
             print('Elapsed time for epoch:',time2 - time1,'s')
             print('ETA of completion:',(time2 - time1)*(args.epochs - epoch - 1)/60,'minutes')
             print()
+            epoch += 1
 
 
 
