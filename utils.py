@@ -15,6 +15,8 @@ from torch.optim.lr_scheduler import _LRScheduler, StepLR
 from skimage import io, color
 
 
+import numpy as np
+
 """
 # DATA preparation
 original size:
@@ -170,12 +172,12 @@ def TinyImageNet_data_loader(base_folder, batch_size, color_distortion=False, co
   # data augmentation to val data
   test_transform = transforms.Compose([transforms.ToTensor(), norm])
   if not col:
-    train_dataset = TinyImageNet('.', base_folder, split='train', download=True, transform=train_transform,color_distortion=color_distortion, col=col)
-    val_dataset = TinyImageNet('.', base_folder, split='val', download=True, transform=test_transform, col=col)
+    train_dataset = TinyImageNet('data', base_folder, split='train', download=True, transform=train_transform,color_distortion=color_distortion, col=col)
+    val_dataset = TinyImageNet('data', base_folder, split='val', download=True, transform=test_transform, col=col)
   else:
     col_transform = transforms.Compose([transforms.ToTensor()])
-    train_dataset = TinyImageNet('.', base_folder, split='train', download=True, transform=col_transform,target_transform=col_transform, col=col)
-    val_dataset = TinyImageNet('.', base_folder, split='val', download=True, transform=col_transform, target_transform=col_transform, col=col)
+    train_dataset = TinyImageNet('data', base_folder, split='train', download=True, transform=col_transform,target_transform=col_transform, col=col)
+    val_dataset = TinyImageNet('data', base_folder, split='val', download=True, transform=col_transform, target_transform=col_transform, col=col)
    
   train_dataloader = DataLoader(train_dataset, batch_size=batch_size,  shuffle=True)
   val_dataloader = DataLoader(val_dataset, batch_size=batch_size,  shuffle=False)

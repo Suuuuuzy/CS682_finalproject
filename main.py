@@ -40,7 +40,7 @@ parser.add_argument('--resume', default='', type=str, metavar='PATH',
                     help='path to latest checkpoitn, (default: None)')
 parser.add_argument('-e', '--evaluate', dest='evaluate', action='store_true',
                     help='evaluate model on validation set')
-parser.add_argument('-c', '--color_distortion', dest='color_distortion',action='store_true', type=bool,
+parser.add_argument('-c', '--color_distortion', dest='color_distortion',action='store_true',
                     help='add color_distortion to train set')
 # parser.add_argument('-col', '--col', dest='col',action='store_true', type=bool,
 #                     help='colorization dataloader')
@@ -52,6 +52,8 @@ parser.add_argument("--num_classes", type=int, default=3,
 
 best_prec1 = 0.0
 
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+print("Device: %s" % device)
 def main():
     global args, best_prec1
     args = parser.parse_args()
@@ -61,9 +63,8 @@ def main():
     if args.mode=='baseline_train':
         model = initialize_model(use_resnet=True, pretrained=False, nclasses=200)
     elif args.mode=='pretrain':
-        model = deeplab_network.deeplabv3_resnet50(num_classes=args.num_classes, output_stride=args.output_stride)
-        model = initialize_model(use_resnet=True, pretrained=False, nclasses=3)
-        utils.set_bn_momentum(model.backbone, momentum=0.01)
+        model = deeplab_network.deeplabv3_resnet50(num_classes=args.num_classes, output_stride=args.output_stride, pretrained_backbone=False)
+        set_bn_momentum(model.backbone, momentum=0.01)
     elif args.mode=='finetune':
         model = initialize_model(use_resnet=True, pretrained=False, nclasses=3)
         # load the pretrained model
@@ -125,6 +126,8 @@ def main():
                 test_top1s = list(load_data['test_top1s'])
                 test_top5s = list(load_data['test_top5s'])
             elif args.mode=='pretrain':
+                checkpoint = torch.load(args.resume)
+                args.start_epoch = checkpoint['epoch']
                 model.load_state_dict(checkpoint['state_dict'])
                 optimizer.load_state_dict(checkpoint['optimizer'])
                 scheduler.load_state_dict(checkpoint['scheduler'])
@@ -242,10 +245,11 @@ def train(train_loader, model, criterion, optimizer, epoch, print_freq, coloriza
     for i, (input, target) in enumerate(train_loader):
         # measure data loading time
         data_time.update(time.time() - end)
-        if torch.cuda.is_available():
-            target = target.cuda()
-            input = input.cuda()
-
+       # if torch.cuda.is_available():
+       #     target = target.cuda()
+      #      input = input.cuda()
+        target = target.to(device, dtype=torch.float32)
+        input = input.to(device, dtype=torch.float32)
         if colorization:
             input = input.repeat(1,3,1,1)
 
@@ -301,8 +305,10 @@ def validate(val_loader, model, criterion, print_freq, colorization=False):
 
     end = time.time()
     for i, (input, target) in enumerate(val_loader):
-        target = target.cuda()
-        input = input.cuda()
+       # target = target.cuda()
+       # input = input.cuda()
+        input = input.to(device, dtype=torch.float32)
+        target = target.to(device, dtype=torch.float32)
 
         if colorization:
             input = input.repeat(1,3,1,1)
