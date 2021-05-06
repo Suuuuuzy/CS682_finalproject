@@ -347,7 +347,7 @@ def validate(val_loader, model, criterion, print_freq, colorization=False):
             i, len(val_loader), batch_time=batch_time, loss=losses))
     return losses.avg, top1.avg, top5.avg
 
-def visulization(val_loader, model, args.start_epoch):
+def visulization(val_loader, model,start_epoch):
     # switch to evaluate mode
     model.eval()
     os.makedirs('visulization', exist_ok=True)
@@ -382,7 +382,7 @@ def visulization(val_loader, model, args.start_epoch):
             ax.imshow(img_show)
             ax.set_title('Prediction')
 
-        plt.savefig(os.path.join('visulization', args.start_epoch+'.png'))
+        plt.savefig(os.path.join('visulization', str(start_epoch)+'.png'))
 
         # fig = plt.figure(figsize=(64., 64.))
         # grid = ImageGrid(fig, 111,  # similar to subplot(111)
