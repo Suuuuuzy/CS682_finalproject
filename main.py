@@ -11,8 +11,10 @@ import torch.nn as nn
 import torch.optim as optim
 import torch.utils.data
 
-from utils import TinyImageNet_data_loader
+from utils import TinyImageNet_data_loader, set_bn_momentum, PolyLR 
 from helper import AverageMeter, save_checkpoint, accuracy, adjust_learning_rate
+
+import deeplab_network
 
 parser = argparse.ArgumentParser(description='PyTorch Tiny/ImageNet Training')
 parser.add_argument('--dataset', default='tiny-imagenet-200-01', help='TinyImageNet or ImageNet')
@@ -38,10 +40,15 @@ parser.add_argument('--resume', default='', type=str, metavar='PATH',
                     help='path to latest checkpoitn, (default: None)')
 parser.add_argument('-e', '--evaluate', dest='evaluate', action='store_true',
                     help='evaluate model on validation set')
-parser.add_argument('-c', '--color_distortion', dest='color_distortion',default=True, type=bool,
+parser.add_argument('-c', '--color_distortion', dest='color_distortion',action='store_true', type=bool,
                     help='add color_distortion to train set')
+# parser.add_argument('-col', '--col', dest='col',action='store_true', type=bool,
+#                     help='colorization dataloader')
 parser.add_argument('--print_freq', '-f', default=40, type=int, metavar='N',
                     help='print frequency (default: 40)')
+parser.add_argument("--output_stride", type=int, default=16, choices=[8, 16])
+parser.add_argument("--num_classes", type=int, default=3,
+                        help="num classes (default: 3)")
 
 best_prec1 = 0.0
 
@@ -50,16 +57,15 @@ def main():
     args = parser.parse_args()
     print(args.mode)
 
-    # model
+    # STEP1: model
     if args.mode=='baseline_train':
         model = initialize_model(use_resnet=True, pretrained=False, nclasses=200)
-        criterion = nn.CrossEntropyLoss()
     elif args.mode=='pretrain':
+        model = deeplab_network.deeplabv3_resnet50(num_classes=args.num_classes, output_stride=args.output_stride)
         model = initialize_model(use_resnet=True, pretrained=False, nclasses=3)
-        criterion = nn.MSELoss()
+        utils.set_bn_momentum(model.backbone, momentum=0.01)
     elif args.mode=='finetune':
         model = initialize_model(use_resnet=True, pretrained=False, nclasses=3)
-        criterion = nn.CrossEntropyLoss()
         # load the pretrained model
         if args.pretrained_model:
             if os.path.isfile(args.pretrained_model):
@@ -70,13 +76,23 @@ def main():
                 model.load_state_dict(checkpoint['state_dict'])
                 optimizer.load_state_dict(checkpoint['optimizer'])
                 print("=> loaded pretrained model '{}' (epoch {})".format(args.resume, checkpoint['epoch']))
-
-
     if torch.cuda.is_available:
         model = model.cuda()
-    optimizer = torch.optim.SGD(model.parameters(), lr=args.lr, momentum=args.momentum, weight_decay=args.weight_decay)
-    train_scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=args.step_size, gamma=args.gamma) 
     
+    # STEP2: criterion and optimizer
+    if args.mode in ['baseline_train', 'finetune']:
+        criterion = nn.CrossEntropyLoss()
+        optimizer = torch.optim.SGD(model.parameters(), lr=args.lr, momentum=args.momentum, weight_decay=args.weight_decay)
+        # train_scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=args.step_size, gamma=args.gamma) 
+    elif args.mode=='pretrain':
+        criterion = nn.MSELoss()
+        optimizer = torch.optim.SGD(params=[
+        {'params': model.backbone.parameters(), 'lr': 0.1*args.lr},
+        {'params': model.classifier.parameters(), 'lr': args.lr},
+    ], lr=args.lr, momentum=0.9, weight_decay=args.weight_decay)
+        scheduler = PolyLR(optimizer, args.epochs, power=0.9)
+
+    # STEP3: loss/prec record
     if args.mode in ['baseline_train', 'finetune']:
         train_losses = []
         train_top1s = []
@@ -89,19 +105,19 @@ def main():
         train_losses = []
         test_losses = []
 
-    # optionlly resume from a checkpoint
+    # STEP4: optionlly resume from a checkpoint
     if args.resume:
         print('resume')
         if os.path.isfile(args.resume):
             print("=> loading checkpoint '{}'".format(args.resume))
-            checkpoint = torch.load(args.resume)
-            args.start_epoch = checkpoint['epoch']
-            best_prec1 = checkpoint['best_prec1']
-            model.load_state_dict(checkpoint['state_dict'])
-            optimizer.load_state_dict(checkpoint['optimizer'])
-            datafile = args.resume.split('.pth')[0] + '.npz'
-            load_data = np.load(datafile)
             if args.mode in ['baseline_train', 'finetune']:
+                checkpoint = torch.load(args.resume)
+                args.start_epoch = checkpoint['epoch']
+                best_prec1 = checkpoint['best_prec1']
+                model.load_state_dict(checkpoint['state_dict'])
+                optimizer.load_state_dict(checkpoint['optimizer'])
+                datafile = args.resume.split('.pth')[0] + '.npz'
+                load_data = np.load(datafile)
                 train_losses = list(load_data['train_losses'])
                 train_top1s = list(load_data['train_top1s'])
                 train_top5s = list(load_data['train_top5s'])
@@ -109,15 +125,22 @@ def main():
                 test_top1s = list(load_data['test_top1s'])
                 test_top5s = list(load_data['test_top5s'])
             elif args.mode=='pretrain':
+                model.load_state_dict(checkpoint['state_dict'])
+                optimizer.load_state_dict(checkpoint['optimizer'])
+                scheduler.load_state_dict(checkpoint['scheduler'])
+                datafile = args.resume.split('.pth')[0] + '.npz'
+                load_data = np.load(datafile)
                 train_losses = list(load_data['train_losses'])
                 test_losses = list(load_data['test_losses'])
             print("=> loaded checkpoint '{}' (epoch {})".format(args.resume, checkpoint['epoch']))
         else:
             print("=> no checkpoint found at '{}'".format(args.resume))
 
+    # STEP5: train!
     if args.mode in ['baseline_train', 'finetune']:
         # data
         from utils import TinyImageNet_data_loader
+        print('color_distortion:', color_distortion)
         train_loader, val_loader = TinyImageNet_data_loader(args.dataset, args.batch_size,color_distortion=args.color_distortion)
         
         # if evaluate the model
@@ -131,12 +154,14 @@ def main():
             time1 = time.time() #timekeeping
 
             # train for one epoch
+            model.train()
             loss, top1, top5 = train(train_loader, model, criterion, optimizer, epoch, args.print_freq)
             train_losses.append(loss)
             train_top1s.append(top1)
             train_top5s.append(top5)
 
             # evaluate on validation set
+            model.eval()
             loss, prec1, prec5 = validate(val_loader, model, criterion, args.print_freq)
             test_losses.append(loss)
             test_top1s.append(prec1)
@@ -155,7 +180,6 @@ def main():
             }, is_best, args.mode + '_' + args.dataset +'.pth')
 
             np.savez(args.mode + '_' + args.dataset +'.npz', train_losses=train_losses,train_top1s=train_top1s,train_top5s=train_top5s, test_losses=test_losses,test_top1s=test_top1s, test_top5s=test_top5s)
-            # train_scheduler.step()
            # np.savez(args.mode + '_' + args.dataset +'.npz', train_losses=train_losses)
             time2 = time.time() #timekeeping
             print('Elapsed time for epoch:',time2 - time1,'s')
@@ -164,22 +188,24 @@ def main():
     elif args.mode=='pretrain':
         #data
         from utils import TinyImageNet_data_loader
-        train_loader, val_loader = TinyImageNet_data_loader(args.dataset, args.batch_size,color_distortion=args.color_distortion)
+        train_loader, val_loader = TinyImageNet_data_loader(args.dataset, args.batch_size, col=True)
         
         # if evaluate the model, show some results
         if args.evaluate:
             print('evaluate this model on validation dataset')
-            validate(val_loader, model, criterion, args.print_freq)
+            validate(val_loader, model, criterion, args.print_freq, colorization=True)
             return
 
         for epoch in range(args.start_epoch, args.epochs):
-            adjust_learning_rate(optimizer, epoch, args.lr)
+            # adjust_learning_rate(optimizer, epoch, args.lr)
             time1 = time.time() #timekeeping
 
+            model.train()
             # train for one epoch
             loss, _, _ = train(train_loader, model, criterion, optimizer, epoch, args.print_freq, colorization=True)
             train_losses.append(loss)
 
+            model.eval()
             # evaluate on validation set
             loss, _, _ = validate(val_loader, model, criterion, args.print_freq, colorization=True)
             test_losses.append(loss)
@@ -188,13 +214,12 @@ def main():
                 'epoch': epoch + 1,
                 'mode': args.mode,
                 'state_dict': model.state_dict(),
-                'best_prec1': 0,
-                'optimizer': optimizer.state_dict()
-            }, is_best, args.mode + '_' + args.dataset +'.pth')
+                'optimizer': optimizer.state_dict(),
+                'scheduler':scheduler.state_dict()
+            }, True, args.mode + '_' + args.dataset +'.pth')
 
             np.savez(args.mode + '_' + args.dataset +'.npz', train_losses=train_losses, test_losses=test_losses)
-            # train_scheduler.step()
-           # np.savez(args.mode + '_' + args.dataset +'.npz', train_losses=train_losses)
+            scheduler.step()
             time2 = time.time() #timekeeping
             print('Elapsed time for epoch:',time2 - time1,'s')
             print('ETA of completion:',(time2 - time1)*(args.epochs - epoch - 1)/60,'minutes')
@@ -220,6 +245,9 @@ def train(train_loader, model, criterion, optimizer, epoch, print_freq, coloriza
         if torch.cuda.is_available():
             target = target.cuda()
             input = input.cuda()
+
+        if colorization:
+            input = input.repeat(1,3,1,1)
 
         # compute output
         output = model(input)
@@ -275,6 +303,10 @@ def validate(val_loader, model, criterion, print_freq, colorization=False):
     for i, (input, target) in enumerate(val_loader):
         target = target.cuda()
         input = input.cuda()
+
+        if colorization:
+            input = input.repeat(1,3,1,1)
+            
         with torch.no_grad():
             # compute output
             output = model(input)

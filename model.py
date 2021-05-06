@@ -22,4 +22,3 @@ def initialize_model(use_resnet=True, pretrained=False, nclasses=10):
     else:
         model.classifier._modules['6'] = nn.Linear(4096, nclasses)
     return model
-
