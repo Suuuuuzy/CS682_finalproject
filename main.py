@@ -306,7 +306,7 @@ def validate(val_loader, model, criterion, print_freq, colorization=False):
 
         if colorization:
             input = input.repeat(1,3,1,1)
-            
+
         with torch.no_grad():
             # compute output
             output = model(input)
