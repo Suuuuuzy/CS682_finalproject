@@ -16,6 +16,11 @@ from helper import AverageMeter, save_checkpoint, accuracy, adjust_learning_rate
 
 import deeplab_network
 
+from torchvision import transforms
+import matplotlib.pyplot as plt
+# from mpl_toolkits.axes_grid1 import ImageGrid
+
+
 parser = argparse.ArgumentParser(description='PyTorch Tiny/ImageNet Training')
 parser.add_argument('--dataset', default='tiny-imagenet-200-01', help='TinyImageNet or ImageNet')
 parser.add_argument('--start-epoch', default=0, type=int, metavar='N',
@@ -196,7 +201,7 @@ def main():
         # if evaluate the model, show some results
         if args.evaluate:
             print('evaluate this model on validation dataset')
-            validate(val_loader, model, criterion, args.print_freq, colorization=True)
+            visulization(val_loader, model, args.start_epoch)
             return
 
         for epoch in range(args.start_epoch, args.epochs):
@@ -341,6 +346,59 @@ def validate(val_loader, model, criterion, print_freq, colorization=False):
               'Loss {loss.val:.4f} ({loss.avg:.4f})\t'.format(
             i, len(val_loader), batch_time=batch_time, loss=losses))
     return losses.avg, top1.avg, top5.avg
+
+def visulization(val_loader, model, args.start_epoch):
+    # switch to evaluate mode
+    model.eval()
+    os.makedirs('visulization', exist_ok=True)
+    for i, (input, target) in enumerate(val_loader):
+       # target = target.cuda()
+       # input = input.cuda()
+        input = input[0:10]
+        target = target[0:10]
+        input = input.to(device, dtype=torch.float32)
+        target = target.to(device, dtype=torch.float32)
+
+        input = input.repeat(1,3,1,1)
+
+        with torch.no_grad():
+            # compute output
+            output = model(input)
+            # output = output.cpu()
+
+        for i in range(10):
+        # img_show = transforms.ToPILImage()(image[i])
+            plt.figure(0)
+            ax = plt.subplot(131)
+            img_show = transforms.ToPILImage()(input[i])
+            ax.imshow(img_show)
+            ax.set_title('Input')
+            ax = plt.subplot(132)
+            img_show = transforms.ToPILImage()(target[i])
+            ax.imshow(img_show)
+            ax.set_title('Ground truth')
+            ax = plt.subplot(133)
+            img_show = transforms.ToPILImage()(output[i])
+            ax.imshow(img_show)
+            ax.set_title('Prediction')
+
+        plt.savefig(os.path.join('visulization', args.start_epoch+'.png'))
+
+        # fig = plt.figure(figsize=(64., 64.))
+        # grid = ImageGrid(fig, 111,  # similar to subplot(111)
+        #                  nrows_ncols=(10, 2),  # creates 2x2 grid of axes
+        #                  axes_pad=0.1,  # pad between axes in inch.
+        #                  )
+
+        # for ax, im in zip(grid, [im1, im2, im3, im4]):
+        #     # Iterating over the grid returns the Axes.
+        #     ax.imshow(im)
+
+        # plt.savefig(os.path.join('visulization', args.start_epoch+'.png'))
+
+
+        break
+
 
 
 if __name__ == '__main__':
