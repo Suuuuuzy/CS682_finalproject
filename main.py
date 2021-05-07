@@ -47,6 +47,8 @@ parser.add_argument('-e', '--evaluate', dest='evaluate', action='store_true',
                     help='evaluate model on validation set')
 parser.add_argument('-c', '--color_distortion', dest='color_distortion',action='store_true',
                     help='add color_distortion to train set')
+parser.add_argument('-ct', '--col_test', dest='col_test',action='store_true',
+                    help='try one image')
 # parser.add_argument('-col', '--col', dest='col',action='store_true', type=bool,
 #                     help='colorization dataloader')
 parser.add_argument('--print_freq', '-f', default=40, type=int, metavar='N',
