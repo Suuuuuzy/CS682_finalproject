@@ -421,7 +421,7 @@ def visulization(train_loader, model, start_epoch):
         images.extend(input)
         images.extend(target)
         images.extend(output)
-        for ax, im in zip(grid, [images]):
+        for ax, im in zip(grid, images):
             # Iterating over the grid returns the Axes.
             ax.imshow(im)
 
