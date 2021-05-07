@@ -202,7 +202,8 @@ def main():
                 'optimizer': optimizer.state_dict()
             }, is_best, save_model_name)
 
-            np.savez(args.mode + '_' + args.dataset +'.npz', train_losses=train_losses,train_top1s=train_top1s,train_top5s=train_top5s, test_losses=test_losses,test_top1s=test_top1s, test_top5s=test_top5s)
+            save_data_name = save_model_name.split('.pth') + '.npz'
+            np.savez(save_data_name, train_losses=train_losses,train_top1s=train_top1s,train_top5s=train_top5s, test_losses=test_losses,test_top1s=test_top1s, test_top5s=test_top5s)
            # np.savez(args.mode + '_' + args.dataset +'.npz', train_losses=train_losses)
             time2 = time.time() #timekeeping
             print('Elapsed time for epoch:',time2 - time1,'s')
