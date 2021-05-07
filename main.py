@@ -87,16 +87,16 @@ def main():
             model = initialize_model(use_resnet=True, pretrained=False, nclasses=3)
             # load the pretrained model
             if args.pretrained_model:
-                if os.path.isfile(args.pretrained_model):
-                    print("=> loading pretrained model '{}'".format(args.pretrained_model))
-                    state_dict = load_state_dict_from_url(args.pretrained_model)
-                    model.load_state_dict(state_dict)
-                    print("=> loaded pretrained model " + args.pretrain_task)
-                    # freeze early layers
-                    for parameter in model.parameters():
-                        parameter.requires_grad = False
-                    # add the last layer
-                    model.fc = torch.nn.Linear(2048, 200)
+                # if os.path.isfile(args.pretrained_model):
+                print("=> loading pretrained model '{}'".format(args.pretrained_model))
+                state_dict = load_state_dict_from_url(args.pretrained_model)
+                model.load_state_dict(state_dict)
+                print("=> loaded pretrained model " + args.pretrain_task)
+                # freeze early layers
+                for parameter in model.parameters():
+                    parameter.requires_grad = False
+                # add the last layer
+                model.fc = torch.nn.Linear(2048, 200)
         elif args.pretrain_task=='colorization':
             model = deeplab_network.deeplabv3_resnet50(num_classes=args.num_classes, output_stride=args.output_stride, pretrained_backbone=False)
             # load the pretrained model
@@ -174,7 +174,7 @@ def main():
     if args.mode in ['baseline_train', 'finetune']:
         # data
         # from utils import TinyImageNet_data_loader
-        print('color_distortion:', color_distortion)
+        print('color_distortion:', args.color_distortion)
         train_loader, val_loader = TinyImageNet_data_loader(args.dataset, args.batch_size,color_distortion=args.color_distortion)
         
         # if evaluate the model
@@ -335,8 +335,12 @@ def train(train_loader, model, criterion, optimizer, epoch, print_freq, coloriza
         cur_itrs+=1
         # measure data loading time
         data_time.update(time.time() - end)
-        target = target.to(device, dtype=torch.float32)
-        input = input.to(device, dtype=torch.float32)
+        if args.mode=='pretrain':
+            target = target.to(device, dtype=torch.float32)
+            input = input.to(device, dtype=torch.float32)
+        else:
+            target = target.cuda()
+            input = input.cuda()
 
         if colorization:
             input = transforms.Resize(500)(input)
@@ -399,8 +403,12 @@ def validate(val_loader, model, criterion, print_freq, colorization=False):
     for i, (input, target) in enumerate(val_loader):
        # target = target.cuda()
        # input = input.cuda()
-        input = input.to(device, dtype=torch.float32)
-        target = target.to(device, dtype=torch.float32)
+        if args.mode=='pretrain':
+            target = target.to(device, dtype=torch.float32)
+            input = input.to(device, dtype=torch.float32)
+        else:
+            target = target.cuda()
+            input = input.cuda()
 
         if colorization:
             input = transforms.Resize(500)(input)
