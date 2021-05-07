@@ -202,7 +202,7 @@ def main():
     elif args.mode=='pretrain':
         #data
         from utils import TinyImageNet_data_loader
-        args.dataset = 'tiny-imagenet-200'
+        # args.dataset = 'tiny-imagenet-200'
         args.batch_size = 16
         train_loader, val_loader = TinyImageNet_data_loader(args.dataset, args.batch_size, col=True)
         
