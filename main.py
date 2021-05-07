@@ -192,13 +192,15 @@ def main():
             is_best = prec1 > best_prec1
             best_prec1 = max(prec1, best_prec1)
 
+            save_model_name = args.mode + '_' + args.pretrain_task + '_' + args.dataset +'.pth'
+            if args.mode=='finetune' else args.mode + '_' + args.dataset +'.pth'
             save_checkpoint({
                 'epoch': epoch + 1,
                 'mode': args.mode,
                 'state_dict': model.state_dict(),
                 'best_prec1': best_prec1,
                 'optimizer': optimizer.state_dict()
-            }, is_best, args.mode + '_' + args.dataset +'.pth')
+            }, is_best, save_model_name)
 
             np.savez(args.mode + '_' + args.dataset +'.npz', train_losses=train_losses,train_top1s=train_top1s,train_top5s=train_top5s, test_losses=test_losses,test_top1s=test_top1s, test_top5s=test_top5s)
            # np.savez(args.mode + '_' + args.dataset +'.npz', train_losses=train_losses)
