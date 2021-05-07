@@ -4,6 +4,7 @@ import os
 import time
 import numpy as np
 from torchvision.models.utils import load_state_dict_from_url
+from simclr import simclr_encoder
 
 from model import initialize_model
 
@@ -82,21 +83,9 @@ def main():
         model = deeplab_network.deeplabv3_resnet50(num_classes=args.num_classes, output_stride=args.output_stride, pretrained_backbone=False)
         set_bn_momentum(model.backbone, momentum=0.01)
     elif args.mode=='finetune':
-        # parser.add_argument('--pretrain_task', default='pretrain_task', help='cimclr/colorization/jigsaw')
-        if args.pretrain_task=='cimclr':
-            model = initialize_model(use_resnet=True, pretrained=False, nclasses=3)
-            # load the pretrained model
-            if args.pretrained_model:
-                # if os.path.isfile(args.pretrained_model):
-                print("=> loading pretrained model '{}'".format(args.pretrained_model))
-                state_dict = load_state_dict_from_url(args.pretrained_model)
-                model.load_state_dict(state_dict)
-                print("=> loaded pretrained model " + args.pretrain_task)
-                # freeze early layers
-                for parameter in model.parameters():
-                    parameter.requires_grad = False
-                # add the last layer
-                model.fc = torch.nn.Linear(2048, 200)
+        # parser.add_argument('--pretrain_task', default='pretrain_task', help='simclr/colorization/jigsaw')
+        if args.pretrain_task=='simclr' and args.pretrained_model:
+            model = simclr_encoder(args.pretrained_model)
         elif args.pretrain_task=='colorization':
             model = deeplab_network.deeplabv3_resnet50(num_classes=args.num_classes, output_stride=args.output_stride, pretrained_backbone=False)
             # load the pretrained model
