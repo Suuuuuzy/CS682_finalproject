@@ -202,7 +202,7 @@ def main():
     elif args.mode=='pretrain':
         #data
         from utils import TinyImageNet_data_loader
-        args.dataset = 'tiny-imagenet-200'
+        # args.dataset = 'tiny-imagenet-200'
         args.batch_size = 16
         train_loader, val_loader = TinyImageNet_data_loader(args.dataset, args.batch_size, col=True)
         
@@ -376,7 +376,7 @@ def visulization(train_loader, model, start_epoch):
     # switch to evaluate mode
     model.eval()
     os.makedirs('visulization', exist_ok=True)
-    for i, (input, target) in enumerate(val_loader):
+    for i, (input, target) in enumerate(train_loader):
        # target = target.cuda()
        # input = input.cuda()
         input = input[0:10]
