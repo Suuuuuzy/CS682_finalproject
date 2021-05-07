@@ -203,42 +203,45 @@ def main():
             print()
     elif args.mode=='pretrain':
         if args.col_test:
-            train_loader, val_loader = TinyImageNet_data_loader(args.dataset, 4, col=True)
+            args.dataset = 'tiny-imagenet-200-0002'
+            train_loader, val_loader = TinyImageNet_data_loader(args.dataset, 16, col=True)
             # fetch frist input and target
-
-            for gray_img, col_img in train_loader:
-                break
-            gray_img = gray_img.to(device, dtype=torch.float32)
-            col_img = col_img.to(device, dtype=torch.float32)
-
-            col_img = transforms.Resize(500)(col_img)
-            # col_img = col_img.repeat(4, 1, 1, 1)
-            gray_img = transforms.Resize(500)(gray_img)
-            gray_img = gray_img.repeat(1,3,1,1)
-            model.train()
+            epoch = 0
             while True:
-                if cur_itrs >=  args.total_itrs:
-                    return
-                output = model(gray_img)
-                loss = criterion(output, col_img)
-                train_losses.append(loss)
-                optimizer.zero_grad()
-                loss.backward()
-                optimizer.step()
+                epoch+=1
+                for gray_img, col_img in train_loader:
+                    cur_itrs+=1
+                    # break
+                    gray_img = gray_img.to(device, dtype=torch.float32)
+                    col_img = col_img.to(device, dtype=torch.float32)
 
-                if cur_itrs%args.print_freq==0:
-                    simple_visulize(gray_img, col_img, output)
-                    save_checkpoint({
-                        'epoch': 0,
-                        'mode': args.mode,
-                        'state_dict': model.state_dict(),
-                        'optimizer': optimizer.state_dict(),
-                        'scheduler':scheduler.state_dict(),
-                        "cur_itrs": cur_itrs
-                    }, True, args.mode + '_test_' + args.dataset +'.pth')
+                    col_img = transforms.Resize(500)(col_img)
+                    # col_img = col_img.repeat(4, 1, 1, 1)
+                    gray_img = transforms.Resize(500)(gray_img)
+                    gray_img = gray_img.repeat(1,3,1,1)
+                    model.train()                    
+                    output = model(gray_img)
+                    loss = criterion(output, col_img)
+                    train_losses.append(loss.cpu().data.item())
+                    optimizer.zero_grad()
+                    loss.backward()
+                    optimizer.step()
 
-                    np.savez(args.mode + '_test_' + args.dataset +'.npz', train_losses=train_losses)
-                cur_itrs+=1
+                    if cur_itrs%args.print_freq==0:
+                        id = cur_itrs/args.print_freq
+                        simple_visulize(model, train_loader, id)
+                        save_checkpoint({
+                            'epoch': epoch,
+                            'mode': args.mode,
+                            'state_dict': model.state_dict(),
+                            'optimizer': optimizer.state_dict(),
+                            'scheduler':scheduler.state_dict(),
+                            "cur_itrs": cur_itrs
+                        }, True, args.mode + '_test_' + args.dataset +'.pth')
+
+                        np.savez(args.mode + '_test_' + args.dataset +'.npz', train_losses=train_losses)
+                    if cur_itrs >=  args.total_itrs:
+                        return
 
         else:
             #data
@@ -453,7 +456,22 @@ def visulization(train_loader, model, start_epoch):
 
         break
 
-def simple_visulize(input, target, output):
+def simple_visulize(model, train_loader, id):
+    for gray_img, col_img in train_loader:
+        break
+    gray_img = gray_img.to(device, dtype=torch.float32)
+    col_img = col_img.to(device, dtype=torch.float32)
+
+    col_img = transforms.Resize(500)(col_img)
+    # col_img = col_img.repeat(4, 1, 1, 1)
+    gray_img = transforms.Resize(500)(gray_img)
+    gray_img = gray_img.repeat(1,3,1,1)
+    model.train() 
+    with torch.no_grad():                   
+        output = model(gray_img)
+
+    input = gray_img
+    target = col_img
     for i in range(min(input.size(0), 5)):
         plt.figure(0)
         ax = plt.subplot(131)
@@ -469,7 +487,7 @@ def simple_visulize(input, target, output):
         ax.imshow(img_show, vmin = 0)
         # ax.imshow(img_show, vmin = 0, vmax = 255)
         ax.set_title('Prediction')
-        plt.savefig('simple_visulize_' + str(i) + '.png')
+        plt.savefig('simple_visulize_' + str(i) + '_' + str(id) + '.png')
 
 
 if __name__ == '__main__':
