@@ -426,7 +426,7 @@ def visulization(train_loader, model, start_epoch):
             # Iterating over the grid returns the Axes.
             ax.imshow(im)
 
-        # plt.savefig(os.path.join('visulization', str(start_epoch)+'.png'))
+        plt.savefig(os.path.join('visulization', str(start_epoch)+'.png'))
 
 
         break
