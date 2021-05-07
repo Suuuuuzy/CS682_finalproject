@@ -376,7 +376,7 @@ def visulization(train_loader, model, start_epoch):
     # switch to evaluate mode
     model.eval()
     os.makedirs('visulization', exist_ok=True)
-    for i, (input, target) in enumerate(val_loader):
+    for i, (input, target) in enumerate(train_loader):
        # target = target.cuda()
        # input = input.cuda()
         input = input[0:10]
@@ -391,35 +391,41 @@ def visulization(train_loader, model, start_epoch):
             output = model(input)
             # output = output.cpu()
 
-        for i in range(10):
-        # img_show = transforms.ToPILImage()(image[i])
-            plt.figure(0)
-            ax = plt.subplot(131)
-            img_show = transforms.ToPILImage()(input[i])
-            ax.imshow(img_show)
-            ax.set_title('Input')
-            ax = plt.subplot(132)
-            img_show = transforms.ToPILImage()(target[i])
-            ax.imshow(img_show)
-            ax.set_title('Ground truth')
-            ax = plt.subplot(133)
-            img_show = transforms.ToPILImage()(output[i])
-            ax.imshow(img_show)
-            ax.set_title('Prediction')
+        # for i in range(10):
+        # # img_show = transforms.ToPILImage()(image[i])
+        #     plt.figure(0)
+        #     ax = plt.subplot(131)
+        #     img_show = transforms.ToPILImage()(input[i])
+        #     ax.imshow(img_show)
+        #     ax.set_title('Input')
+        #     ax = plt.subplot(132)
+        #     img_show = transforms.ToPILImage()(target[i])
+        #     ax.imshow(img_show)
+        #     ax.set_title('Ground truth')
+        #     ax = plt.subplot(133)
+        #     img_show = transforms.ToPILImage()(output[i])
+        #     ax.imshow(img_show)
+        #     ax.set_title('Prediction')
 
-        plt.savefig(os.path.join('visulization', str(start_epoch)+'.png'))
+        # plt.savefig(os.path.join('visulization', str(start_epoch)+'.png'))
 
-        # fig = plt.figure(figsize=(64., 64.))
-        # grid = ImageGrid(fig, 111,  # similar to subplot(111)
-        #                  nrows_ncols=(10, 2),  # creates 2x2 grid of axes
-        #                  axes_pad=0.1,  # pad between axes in inch.
-        #                  )
+        fig = plt.figure(figsize=(64., 64.))
+        grid = ImageGrid(fig, 111,  # similar to subplot(111)
+                         nrows_ncols=(3, 10),  # creates 2x2 grid of axes
+                         axes_pad=0.1,  # pad between axes in inch.
+                         )
+        images = []
+        input = [transforms.ToPILImage()(x) for x in input]
+        target = [transforms.ToPILImage()(x) for x in target]
+        output = [transforms.ToPILImage()(x) for x in output]
+        images.extend(input)
+        images.extend(target)
+        images.extend(output)
+        for ax, im in zip(grid, []):
+            # Iterating over the grid returns the Axes.
+            ax.imshow(im)
 
-        # for ax, im in zip(grid, [im1, im2, im3, im4]):
-        #     # Iterating over the grid returns the Axes.
-        #     ax.imshow(im)
-
-        # plt.savefig(os.path.join('visulization', args.start_epoch+'.png'))
+        plt.savefig(os.path.join('visulization', args.start_epoch+'.png'))
 
 
         break
