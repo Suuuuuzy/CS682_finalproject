@@ -174,7 +174,7 @@ def main():
     if args.mode in ['baseline_train', 'finetune']:
         # data
         # from utils import TinyImageNet_data_loader
-        print('color_distortion:', color_distortion)
+        print('color_distortion:', args.color_distortion)
         train_loader, val_loader = TinyImageNet_data_loader(args.dataset, args.batch_size,color_distortion=args.color_distortion)
         
         # if evaluate the model
@@ -335,8 +335,13 @@ def train(train_loader, model, criterion, optimizer, epoch, print_freq, coloriza
         cur_itrs+=1
         # measure data loading time
         data_time.update(time.time() - end)
-        target = target.to(device, dtype=torch.float32)
-        input = input.to(device, dtype=torch.float32)
+
+        if args.mode=='pretrain':
+            target = target.to(device, dtype=torch.float32)
+            input = input.to(device, dtype=torch.float32)
+        else:
+            target = target.cuda()
+            input = input.cuda()
 
         if colorization:
             input = transforms.Resize(500)(input)
@@ -399,8 +404,12 @@ def validate(val_loader, model, criterion, print_freq, colorization=False):
     for i, (input, target) in enumerate(val_loader):
        # target = target.cuda()
        # input = input.cuda()
-        input = input.to(device, dtype=torch.float32)
-        target = target.to(device, dtype=torch.float32)
+        if args.mode=='pretrain':
+            target = target.to(device, dtype=torch.float32)
+            input = input.to(device, dtype=torch.float32)
+        else:
+            target = target.cuda()
+            input = input.cuda()
 
         if colorization:
             input = transforms.Resize(500)(input)
