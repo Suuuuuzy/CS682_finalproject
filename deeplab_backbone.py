@@ -18,7 +18,7 @@ class backboneModel(nn.Module):
             if name == 'conv1':
                 module = nn.Conv2d(3, 64, kernel_size=3, stride=1, padding=1, bias=False)
             if not isinstance(module, nn.Linear) and not isinstance(module, nn.MaxPool2d):
-            self.append(module)
+                self.f.append(module)
         # encoder
         self.f = nn.Sequential(*self.f)
         self.fc = nn.Linear(2048, 200)
@@ -29,9 +29,9 @@ class backboneModel(nn.Module):
         x = self.fc(feature)
         return x
 
-def deeplab_backbone(path='pretrain_test_tiny-imagenet-200-0002.pth'):
-    model = deeplab_network.deeplabv3_resnet50(num_classes=args.num_classes, output_stride=args.output_stride, pretrained_backbone=False)
-    state_dict = torch.load(path)
+def deeplab_backbone(path='pretrain_test_tiny-imagenet-200-0002.pth',num_classes = 3,output_stride=16 ):
+    model = deeplab_network.deeplabv3_resnet50(num_classes, output_stride, pretrained_backbone=False)
+    state_dict = torch.load(path)['state_dict']
     model.load_state_dict(state_dict)
     model = model.backbone
     # backbone_resnet = backboneModel(model)
