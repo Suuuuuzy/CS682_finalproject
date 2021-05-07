@@ -200,90 +200,53 @@ def main():
             print('ETA of completion:',(time2 - time1)*(args.epochs - epoch - 1)/60,'minutes')
             print()
     elif args.mode=='pretrain':
-        if args.col_test:
-            train_loader, val_loader = TinyImageNet_data_loader(args.dataset, 1, col=True)
-            # fetch frist input and target
-            for gray_img, col_img in train_loader:
-                break
-            gray_img = gray_img.to(device, dtype=torch.float32)
-            col_img = col_img.to(device, dtype=torch.float32)
+        #data
+        from utils import TinyImageNet_data_loader
+        # args.dataset = 'tiny-imagenet-200'
+        args.batch_size = 16
+        train_loader, val_loader = TinyImageNet_data_loader(args.dataset, args.batch_size, col=True)
+        
+        # if evaluate the model, show some results
+        if args.evaluate:
+            print('evaluate this model on validation dataset')
+            visulization(val_loader, model, args.start_epoch)
+            return
 
-            col_img = transforms.Resize(500)(col_img)
-            gray_img = transforms.Resize(500)(gray_img)
-            gray_img = gray_img.repeat(4,3,1,1)
-            model.train()
-            while True:
-                if cur_itrs >=  args.total_itrs:
-                    return
-                output = model(gray_img)
-                loss = criterion(output, col_img)
-                train_losses.append(loss)
-                optimizer.zero_grad()
-                loss.backward()
-                optimizer.step()
-
-                if cur_itrs%args.print_freq==0:
-                    simple_visulize(input, target, output)
-                    save_checkpoint({
-                        'epoch': epoch + 1,
-                        'mode': args.mode,
-                        'state_dict': model.state_dict(),
-                        'optimizer': optimizer.state_dict(),
-                        'scheduler':scheduler.state_dict(),
-                        "cur_itrs": cur_itrs
-                    }, True, args.mode + '_test_' + args.dataset +'.pth')
-
-                    np.savez(args.mode + '_test_' + args.dataset +'.npz', train_losses=train_losses)
-                cur_itrs+=1
-
-        eles:
-            #data
-            from utils import TinyImageNet_data_loader
-            # args.dataset = 'tiny-imagenet-200'
-            args.batch_size = 16
-            train_loader, val_loader = TinyImageNet_data_loader(args.dataset, args.batch_size, col=True)
-            
-            # if evaluate the model, show some results
-            if args.evaluate:
-                print('evaluate this model on validation dataset')
-                visulization(val_loader, model, args.start_epoch)
+        # for epoch in range(args.start_epoch, args.epochs):
+        epoch = 0
+        while True:
+            if cur_itrs >=  args.total_itrs:
                 return
+            # adjust_learning_rate(optimizer, epoch, args.lr)
+            time1 = time.time() #timekeeping
 
-            # for epoch in range(args.start_epoch, args.epochs):
-            epoch = 0
-            while True:
-                if cur_itrs >=  args.total_itrs:
-                    return
-                # adjust_learning_rate(optimizer, epoch, args.lr)
-                time1 = time.time() #timekeeping
+            model.train()
+            # train for one epoch
+            # loss, _, _ = train(train_loader, model, criterion, optimizer, epoch, args.print_freq, colorization=True,scheduler=scheduler)
+            # train_losses.append(loss)
+            
 
-                model.train()
-                train for one epoch
-                loss, _, _ = train(train_loader, model, criterion, optimizer, epoch, args.print_freq, colorization=True,scheduler=scheduler)
-                train_losses.append(loss)
-                
+            # model.eval()
+            # # evaluate on validation set
+            # loss, _, _ = validate(val_loader, model, criterion, args.print_freq, colorization=True)
+            # test_losses.append(loss)
 
-                # model.eval()
-                # # evaluate on validation set
-                # loss, _, _ = validate(val_loader, model, criterion, args.print_freq, colorization=True)
-                # test_losses.append(loss)
+            save_checkpoint({
+                'epoch': epoch + 1,
+                'mode': args.mode,
+                'state_dict': model.state_dict(),
+                'optimizer': optimizer.state_dict(),
+                'scheduler':scheduler.state_dict(),
+                "cur_itrs": cur_itrs
+            }, True, args.mode + '_' + args.dataset +'.pth')
 
-                save_checkpoint({
-                    'epoch': epoch + 1,
-                    'mode': args.mode,
-                    'state_dict': model.state_dict(),
-                    'optimizer': optimizer.state_dict(),
-                    'scheduler':scheduler.state_dict(),
-                    "cur_itrs": cur_itrs
-                }, True, args.mode + '_' + args.dataset +'.pth')
-
-                np.savez(args.mode + '_' + args.dataset +'.npz', train_losses=train_losses)
-                # scheduler.step()
-                time2 = time.time() #timekeeping
-                print('Elapsed time for epoch:',time2 - time1,'s')
-                print('ETA of completion:',(time2 - time1)*(args.total_itrs - cur_itrs - 1)/60,'minutes')
-                print()
-                epoch += 1
+            np.savez(args.mode + '_' + args.dataset +'.npz', train_losses=train_losses)
+            # scheduler.step()
+            time2 = time.time() #timekeeping
+            print('Elapsed time for epoch:',time2 - time1,'s')
+            print('ETA of completion:',(time2 - time1)*(args.total_itrs - cur_itrs - 1)/60,'minutes')
+            print()
+            epoch += 1
 
 
 
@@ -305,6 +268,9 @@ def train(train_loader, model, criterion, optimizer, epoch, print_freq, coloriza
         cur_itrs+=1
         # measure data loading time
         data_time.update(time.time() - end)
+       # if torch.cuda.is_available():
+       #     target = target.cuda()
+      #      input = input.cuda()
         target = target.to(device, dtype=torch.float32)
         input = input.to(device, dtype=torch.float32)
 
@@ -449,22 +415,6 @@ def visulization(train_loader, model, start_epoch):
 
         break
 
-def simple_visulize(input, target, output):
-    plt.figure(0)
-    ax = plt.subplot(131)
-    img_show = transforms.ToPILImage()(input[0])
-    ax.imshow(img_show)
-    ax.set_title('Input')
-    ax = plt.subplot(132)
-    img_show = transforms.ToPILImage()(target[0])
-    ax.imshow(img_show)
-    ax.set_title('Ground truth')
-    ax = plt.subplot(133)
-    img_show = transforms.ToPILImage()(output[0])
-    ax.imshow(img_show, vmin = 0)
-    # ax.imshow(img_show, vmin = 0, vmax = 255)
-    ax.set_title('Prediction')
-    plt.savefig('simple_visulize.png')
 
 
 if __name__ == '__main__':
