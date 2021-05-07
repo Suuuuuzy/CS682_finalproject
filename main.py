@@ -273,9 +273,9 @@ def train(train_loader, model, criterion, optimizer, epoch, print_freq, coloriza
         target = target.to(device, dtype=torch.float32)
         input = input.to(device, dtype=torch.float32)
 
-        input = transforms.Resize(500)(input)
-        target = transforms.Resize(500)(target)
         if colorization:
+            input = transforms.Resize(500)(input)
+            target = transforms.Resize(500)(target)
             input = input.repeat(1,3,1,1)
 
         # compute output
@@ -337,10 +337,9 @@ def validate(val_loader, model, criterion, print_freq, colorization=False):
         input = input.to(device, dtype=torch.float32)
         target = target.to(device, dtype=torch.float32)
 
-        input = transforms.Resize(500)(input)
-        target = transforms.Resize(500)(target)
-
         if colorization:
+            input = transforms.Resize(500)(input)
+            target = transforms.Resize(500)(target)
             input = input.repeat(1,3,1,1)
 
         with torch.no_grad():
@@ -416,6 +415,8 @@ def visulization(train_loader, model, start_epoch):
                          )
         images = []
         input = [transforms.ToPILImage()(x) for x in input]
+        plt.show(input[0])
+        plt.savefig(os.path.join('visulization', str(start_epoch)+'.png'))
         target = [transforms.ToPILImage()(x) for x in target]
         output = [transforms.ToPILImage()(x) for x in output]
         images.extend(input)
