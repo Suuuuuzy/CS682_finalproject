@@ -415,8 +415,6 @@ def visulization(train_loader, model, start_epoch):
                          )
         images = []
         input = [transforms.ToPILImage()(x) for x in input]
-        plt.show(input[0])
-        plt.savefig(os.path.join('visulization', str(start_epoch)+'.png'))
         target = [transforms.ToPILImage()(x) for x in target]
         output = [transforms.ToPILImage()(x) for x in output]
         images.extend(input)
