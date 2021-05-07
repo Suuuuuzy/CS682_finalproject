@@ -4,7 +4,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torchvision.models.resnet import resnet50
 import deeplab_network
-from .backbone import resnet
+from deeplab_network.backbone import resnet
 
 
 
@@ -35,15 +35,19 @@ def deeplab_backbone(path='pretrain_test_tiny-imagenet-200-0002.pth',num_classes
     model.load_state_dict(state_dict)
     model = model.backbone
     # backbone_resnet = backboneModel(model)
-    print(model)
+    # print(model)
 
     replace_stride_with_dilation=[False, False, True]
     aspp_dilate = [6, 12, 18]
     backbone = resnet.resnet50(
     pretrained=False,
     replace_stride_with_dilation=replace_stride_with_dilation)
-    backbone.load_state_dict(model.state_dict(), strict=Fasle)
-    print(backbone)
+    backbone.load_state_dict(model.state_dict(), strict=False)
+    
+    for parameter in backbone.parameters():
+        parameter.requires_grad = False
+    backbone.fc = torch.nn.Linear(2048, 200)
+    # print(backbone)
 
     return backbone
 

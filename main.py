@@ -92,7 +92,6 @@ def main():
         elif args.pretrain_task=='colorization' and args.pretrained_model:
             print("=> loading pretrained model '{}'".format(args.pretrained_model))
             model = deeplab_backbone(args.pretrained_model)
-            return
             print("=> loaded pretrained model " + args.pretrain_task)
 
     if torch.cuda.is_available:
@@ -329,12 +328,14 @@ def train(train_loader, model, criterion, optimizer, epoch, print_freq, coloriza
         else:
             target = target.cuda()
             input = input.cuda()
-
-        if colorization or args.pretrain_task=='colorization':
+        # for pretrain
+        if colorization:
             input = transforms.Resize(500)(input)
             target = transforms.Resize(500)(target)
             input = input.repeat(1,3,1,1)
-
+        # for finetune 
+        if args.pretrain_task=='colorization':
+            input = transforms.Resize(500)(input)
         # compute output
         output = model(input)
         loss = criterion(output, target)
@@ -398,10 +399,12 @@ def validate(val_loader, model, criterion, print_freq, colorization=False):
             target = target.cuda()
             input = input.cuda()
 
-        if colorization or args.pretrain_task=='colorization':
+        if colorization:
             input = transforms.Resize(500)(input)
             target = transforms.Resize(500)(target)
             input = input.repeat(1,3,1,1)
+        if args.pretrain_task=='colorization':
+            input = transforms.Resize(500)(input)
 
         with torch.no_grad():
             # compute output
