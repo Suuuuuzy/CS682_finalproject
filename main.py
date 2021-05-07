@@ -21,6 +21,8 @@ import matplotlib.pyplot as plt
 from mpl_toolkits.axes_grid1 import ImageGrid
 
 
+from tqdm import tqdm
+
 parser = argparse.ArgumentParser(description='PyTorch Tiny/ImageNet Training')
 parser.add_argument('--dataset', default='tiny-imagenet-200-01', help='TinyImageNet or ImageNet')
 parser.add_argument('--start-epoch', default=0, type=int, metavar='N',
@@ -209,7 +211,8 @@ def main():
             epoch = 0
             while True:
                 epoch+=1
-                for gray_img, col_img in train_loader:
+                time1 = time.time()
+                for gray_img, col_img in tqdm(train_loader):
                     cur_itrs+=1
                     # break
                     gray_img = gray_img.to(device, dtype=torch.float32)
@@ -242,6 +245,10 @@ def main():
                         np.savez(args.mode + '_test_' + args.dataset +'.npz', train_losses=train_losses)
                     if cur_itrs >=  args.total_itrs:
                         return
+                time2 = time.time() #timekeeping
+                print('Elapsed time for epoch:',time2 - time1,'s')
+                print('ETA of completion:',(time2 - time1)*(args.total_itrs - cur_itrs - 1)/60,'minutes')
+                print()
 
         else:
             #data
