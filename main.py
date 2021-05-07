@@ -18,7 +18,7 @@ import deeplab_network
 
 from torchvision import transforms
 import matplotlib.pyplot as plt
-# from mpl_toolkits.axes_grid1 import ImageGrid
+from mpl_toolkits.axes_grid1 import ImageGrid
 
 
 parser = argparse.ArgumentParser(description='PyTorch Tiny/ImageNet Training')
@@ -421,11 +421,11 @@ def visulization(train_loader, model, start_epoch):
         images.extend(input)
         images.extend(target)
         images.extend(output)
-        for ax, im in zip(grid, []):
+        for ax, im in zip(grid, [images]):
             # Iterating over the grid returns the Axes.
             ax.imshow(im)
 
-        plt.savefig(os.path.join('visulization', args.start_epoch+'.png'))
+        plt.savefig(os.path.join('visulization', str(start_epoch)+'.png'))
 
 
         break
