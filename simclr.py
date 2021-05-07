@@ -44,7 +44,8 @@ class encoderModel(nn.Module):
 
     def forward(self, x):
         x = self.f(x)
-        x = self.fc(x)
+        feature = torch.flatten(x, start_dim=1)
+        x = self.fc(feature)
         return x
 
 def simclr_encoder(path='results/simclr/simclr_entire.pth'):
