@@ -155,7 +155,7 @@ def main():
     # STEP5: train!
     if args.mode in ['baseline_train', 'finetune']:
         # data
-        from utils import TinyImageNet_data_loader
+        # from utils import TinyImageNet_data_loader
         print('color_distortion:', color_distortion)
         train_loader, val_loader = TinyImageNet_data_loader(args.dataset, args.batch_size,color_distortion=args.color_distortion)
         
@@ -205,6 +205,7 @@ def main():
         if args.col_test:
             train_loader, val_loader = TinyImageNet_data_loader(args.dataset, 4, col=True)
             # fetch frist input and target
+
             for gray_img, col_img in train_loader:
                 break
             gray_img = gray_img.to(device, dtype=torch.float32)
@@ -214,7 +215,6 @@ def main():
             # col_img = col_img.repeat(4, 1, 1, 1)
             gray_img = transforms.Resize(500)(gray_img)
             gray_img = gray_img.repeat(1,3,1,1)
-            # gray_img = gray_img.repeat(4,3,1,1)
             model.train()
             while True:
                 if cur_itrs >=  args.total_itrs:
@@ -242,7 +242,7 @@ def main():
 
         else:
             #data
-            from utils import TinyImageNet_data_loader
+            # from utils import TinyImageNet_data_loader
             # args.dataset = 'tiny-imagenet-200'
             args.batch_size = 16
             train_loader, val_loader = TinyImageNet_data_loader(args.dataset, args.batch_size, col=True)
