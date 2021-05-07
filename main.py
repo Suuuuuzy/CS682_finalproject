@@ -155,7 +155,7 @@ def main():
     # STEP5: train!
     if args.mode in ['baseline_train', 'finetune']:
         # data
-        from utils import TinyImageNet_data_loader
+        # from utils import TinyImageNet_data_loader
         print('color_distortion:', color_distortion)
         train_loader, val_loader = TinyImageNet_data_loader(args.dataset, args.batch_size,color_distortion=args.color_distortion)
         
@@ -203,16 +203,17 @@ def main():
             print()
     elif args.mode=='pretrain':
         if args.col_test:
-            train_loader, val_loader = TinyImageNet_data_loader(args.dataset, 1, col=True)
-            # fetch frist input and target
+            train_loader, val_loader = TinyImageNet_data_loader(args.dataset, 4, col=True)
+            # fetch frist input and targe
             for gray_img, col_img in train_loader:
                 break
             gray_img = gray_img.to(device, dtype=torch.float32)
             col_img = col_img.to(device, dtype=torch.float32)
 
             col_img = transforms.Resize(500)(col_img)
+            # col_img = col_img.repeat(4, 1, 1, 1)
             gray_img = transforms.Resize(500)(gray_img)
-            gray_img = gray_img.repeat(4,3,1,1)
+            gray_img = gray_img.repeat(1,3,1,1)
             model.train()
             while True:
                 if cur_itrs >=  args.total_itrs:
@@ -225,9 +226,9 @@ def main():
                 optimizer.step()
 
                 if cur_itrs%args.print_freq==0:
-                    simple_visulize(input, target, output)
+                    simple_visulize(gray_img, col_img, output)
                     save_checkpoint({
-                        'epoch': epoch + 1,
+                        'epoch': 0,
                         'mode': args.mode,
                         'state_dict': model.state_dict(),
                         'optimizer': optimizer.state_dict(),
@@ -238,9 +239,9 @@ def main():
                     np.savez(args.mode + '_test_' + args.dataset +'.npz', train_losses=train_losses)
                 cur_itrs+=1
 
-        eles:
+        else:
             #data
-            from utils import TinyImageNet_data_loader
+            # from utils import TinyImageNet_data_loader
             # args.dataset = 'tiny-imagenet-200'
             args.batch_size = 16
             train_loader, val_loader = TinyImageNet_data_loader(args.dataset, args.batch_size, col=True)
@@ -260,7 +261,7 @@ def main():
                 time1 = time.time() #timekeeping
 
                 model.train()
-                train for one epoch
+                # train for one epoch
                 loss, _, _ = train(train_loader, model, criterion, optimizer, epoch, args.print_freq, colorization=True,scheduler=scheduler)
                 train_losses.append(loss)
                 
@@ -452,22 +453,22 @@ def visulization(train_loader, model, start_epoch):
         break
 
 def simple_visulize(input, target, output):
-    plt.figure(0)
-    ax = plt.subplot(131)
-    img_show = transforms.ToPILImage()(input[0])
-    ax.imshow(img_show)
-    ax.set_title('Input')
-    ax = plt.subplot(132)
-    img_show = transforms.ToPILImage()(target[0])
-    ax.imshow(img_show)
-    ax.set_title('Ground truth')
-    ax = plt.subplot(133)
-    img_show = transforms.ToPILImage()(output[0])
-    ax.imshow(img_show, vmin = 0)
-    # ax.imshow(img_show, vmin = 0, vmax = 255)
-    ax.set_title('Prediction')
-    plt.savefig('simple_visulize.png')
-
+    for i in range(min(input.size(0), 5)):    
+        plt.figure(0)   
+        ax = plt.subplot(131)
+        img_show = transforms.ToPILImage()(input[0])
+        ax.imshow(img_show)
+        ax.set_title('Input')
+        ax = plt.subplot(132)
+        img_show = transforms.ToPILImage()(target[0])
+        ax.imshow(img_show)
+        ax.set_title('Ground truth')
+        ax = plt.subplot(133)
+        img_show = transforms.ToPILImage()(output[0])
+        ax.imshow(img_show, vmin = 0)
+        # ax.imshow(img_show, vmin = 0, vmax = 255)
+        ax.set_title('Prediction')
+        plt.savefig('simple_visulize_' + str(i) + '.png')
 
 if __name__ == '__main__':
     main()
