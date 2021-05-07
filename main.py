@@ -3,6 +3,7 @@ import argparse
 import os
 import time
 import numpy as np
+from torchvision.models.utils import load_state_dict_from_url
 
 from model import initialize_model
 
@@ -28,6 +29,7 @@ parser.add_argument('--dataset', default='tiny-imagenet-200-01', help='TinyImage
 parser.add_argument('--start-epoch', default=0, type=int, metavar='N',
                     help='manual epoch number (useful to restarts)')
 parser.add_argument('--mode', default='baseline_train', help='baseline_train/pretrain/finetune')
+parser.add_argument('--pretrain_task', default='pretrain_task', help='cimclr/colorization/jigsaw')
 parser.add_argument('--pretrained_model', default='', type=str, metavar='PATH', help='path to the pretrained model')
 parser.add_argument('--epochs', default=10, type=int, metavar='N',
                     help='numer of total epochs to run')
@@ -80,17 +82,31 @@ def main():
         model = deeplab_network.deeplabv3_resnet50(num_classes=args.num_classes, output_stride=args.output_stride, pretrained_backbone=False)
         set_bn_momentum(model.backbone, momentum=0.01)
     elif args.mode=='finetune':
-        model = initialize_model(use_resnet=True, pretrained=False, nclasses=3)
-        # load the pretrained model
-        if args.pretrained_model:
-            if os.path.isfile(args.pretrained_model):
-                print("=> loading pretrained model '{}'".format(args.pretrained_model))
-                checkpoint = torch.load(args.pretrained_model)
-                args.start_epoch = checkpoint['epoch']
-                best_prec1 = checkpoint['best_prec1']
-                model.load_state_dict(checkpoint['state_dict'])
-                optimizer.load_state_dict(checkpoint['optimizer'])
-                print("=> loaded pretrained model '{}' (epoch {})".format(args.resume, checkpoint['epoch']))
+        # parser.add_argument('--pretrain_task', default='pretrain_task', help='cimclr/colorization/jigsaw')
+        if args.pretrain_task=='cimclr':
+            model = initialize_model(use_resnet=True, pretrained=False, nclasses=3)
+            # load the pretrained model
+            if args.pretrained_model:
+                if os.path.isfile(args.pretrained_model):
+                    print("=> loading pretrained model '{}'".format(args.pretrained_model))
+                    state_dict = load_state_dict_from_url(args.pretrained_model)
+                    model.load_state_dict(state_dict)
+                    print("=> loaded pretrained model " + args.pretrain_task)
+                    # freeze early layers
+                    for parameter in model.parameters():
+                        parameter.requires_grad = False
+                    # add the last layer
+                    model.fc = torch.nn.Linear(2048, 200)
+        elif args.pretrain_task=='colorization':
+            model = deeplab_network.deeplabv3_resnet50(num_classes=args.num_classes, output_stride=args.output_stride, pretrained_backbone=False)
+            # load the pretrained model
+            if args.pretrained_model:
+                if os.path.isfile(args.pretrained_model):
+                    print("=> loading pretrained model '{}'".format(args.pretrained_model))
+                    state_dict = torch.load(args.pretrained_model)
+                    model.load_state_dict(state_dict)
+                    print("=> loaded pretrained model " + args.pretrain_task)
+
     if torch.cuda.is_available:
         model = model.cuda()
     
